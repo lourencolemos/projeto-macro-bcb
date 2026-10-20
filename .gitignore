@@ -1,0 +1,11 @@
+# Ambientes e caches
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+
+# Credenciais (NUNCA versionar)
+.streamlit/secrets.toml
+.env
