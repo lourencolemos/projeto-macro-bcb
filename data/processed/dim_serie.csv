@@ -1,0 +1,6 @@
+codigo_sgs,nome,descricao,frequencia
+432,selic_meta,Meta Selic (% a.a.),Diária
+433,ipca_mensal,IPCA variação mensal (%),Mensal
+13522,ipca_12m,IPCA acumulado em 12 meses (%),Mensal
+1,ptax_venda,Dólar PTAX venda (R$),Diária
+24364,ibcbr,IBC-Br dessazonalizado (índice),Mensal
