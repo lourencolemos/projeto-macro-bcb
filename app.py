@@ -2,7 +2,7 @@
 import streamlit as st 
 from scipy import stats
 
-from src import db, graficos
+from src import db, graficos, indicadores
 
 st.set_page_config(page_title="Macro Brasil 2019–2023", page_icon="📈", layout="wide")
 
@@ -11,6 +11,8 @@ st.set_page_config(page_title="Macro Brasil 2019–2023", page_icon="📈", layo
 def pct(v: float) -> str:
     return f"{v:.2f}%".replace(".", ",")
 
+def num(v: float, casas: int = 2) -> str:
+    return f"{v:.{casas}f}".replace(".", ",")
 
 def brl(v: float) -> str:
     return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -20,6 +22,7 @@ def brl(v: float) -> str:
 df, origem = db.carregar_tabela("fato_macro_mensal", "macro_mensal.csv")
 ptax_d, _ = db.carregar_tabela("fato_ptax_diaria", "ptax_diaria.csv")
 df["var_ibcbr_m"] = df["ibcbr"].pct_change() * 100  # calculado antes dos filtros
+df["var_selic_pp"] = df["selic"].diff()
 
 MIN_DATA, MAX_DATA = df["mes"].min().date(), df["mes"].max().date()
 ANOS = sorted(df["ano"].unique().tolist())
@@ -115,8 +118,33 @@ with abas[3]:
     st.caption("Regime = variação da Selic em 3 meses (±0,25 p.p.). A relação é de associação: a pandemia e outros choques afetam o IBC-Br independentemente da política monetária.")
 
 with abas[4]:
-    st.info("TODO: heatmap de Pearson (níveis e variações) + correlação defasada câmbio → IPCA. Associação, não causalidade.")
+    st.subheader("Quais séries andam juntas?")
+    modo = st.radio("Base de cálculo", ["Níveis", "Variações mensais"], horizontal=True, key="f_modo_corr")
+    colunas = graficos.COLUNAS_NIVEIS if modo == "Níveis" else graficos.COLUNAS_VARIACOES
+    if len(dff) < 12:
+        st.warning("Selecione ao menos 12 meses para calcular correlações.")
+    else:
+        corr, pval = indicadores.matriz_correlacao(dff, colunas)
+        st.plotly_chart(graficos.fig_heatmap_correlacao(corr, pval), width="stretch")
+        for _, linha in indicadores.maiores_correlacoes(corr, pval).iterrows():
+            rotulo_a = graficos.ROTULOS[linha["serie_a"]]
+            rotulo_b = graficos.ROTULOS[linha["serie_b"]]
+            st.markdown(f"- **{rotulo_a} × {rotulo_b}**: r = {num(linha['pearson'])} (p = {num(linha['p_valor'], 3)})")
+        st.caption("Correlações entre níveis de séries com tendência podem ser espúrias; as variações mensais são mais confiáveis. * = p < 0,05, sem correção para múltiplos testes. Associação não implica causalidade.")
 
+    st.subheader("Quanto tempo uma série leva para se associar à outra?")
+    par = st.radio("Par de séries", list(graficos.PARES_DEFASAGEM), horizontal=True, key="f_par_lag")
+    x_col, y_col = graficos.PARES_DEFASAGEM[par]
+    res = indicadores.correlacao_defasada(df[x_col], df[y_col], 12)  # série completa, independente dos filtros
+    st.plotly_chart(graficos.fig_correlacao_defasada(res, par), width="stretch")
+    melhor = res.loc[res["pearson"].abs().idxmax()]
+    k = int(melhor["defasagem_meses"])
+    st.caption(
+        f"Maior correlação absoluta: r = {num(melhor['pearson'])} com defasagem de {k} {'mês' if k == 1 else 'meses'} "
+        f"(p = {num(melhor['p_valor'], 3)}, n = {int(melhor['n'])}). Este gráfico usa toda a série 2019–2023, sem os filtros. "
+        "Foram testadas 13 defasagens, então algum resultado significativo pode surgir por acaso. Associação, não causalidade."
+    )
+    
 with abas[5]:
     st.dataframe(dff, width="stretch", hide_index=True)
     st.download_button(
