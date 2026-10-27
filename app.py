@@ -19,6 +19,7 @@ def brl(v: float) -> str:
 # ---------- Dados ----------
 df, origem = db.carregar_tabela("fato_macro_mensal", "macro_mensal.csv")
 ptax_d, _ = db.carregar_tabela("fato_ptax_diaria", "ptax_diaria.csv")
+df["var_ibcbr_m"] = df["ibcbr"].pct_change() * 100  # calculado antes dos filtros
 
 MIN_DATA, MAX_DATA = df["mes"].min().date(), df["mes"].max().date()
 ANOS = sorted(df["ano"].unique().tolist())
@@ -27,7 +28,7 @@ REGIMES = ["Aperto", "Estável", "Corte"]
 
 # ---------- Estado e filtros (session_state) ----------
 def filtros_padrao() -> dict:
-    return {"f_periodo": (MIN_DATA, MAX_DATA), "f_anos": ANOS, "f_regimes": REGIMES}
+    return {"f_periodo": (MIN_DATA, MAX_DATA), "f_anos": ANOS, "f_regimes": REGIMES, "f_sem_2020": False}
 
 
 for chave, valor in filtros_padrao().items():
@@ -102,7 +103,16 @@ with abas[2]:
         st.caption(f"Pearson entre PTAX e IPCA 12m (níveis, {len(par)} meses): r = {r:.2f}, p = {p:.3f}".replace(".", ",") + ". Séries com tendência podem gerar correlação espúria, e associação não implica causalidade.")
 
 with abas[3]:
-    st.info("TODO: IBC-Br dessazonalizado com faixas de aperto/corte monetário.")
+    st.plotly_chart(graficos.fig_ibcbr_ciclos(dff), width="stretch")
+    st.checkbox("Excluir 2020 (choque da pandemia) da média por regime", key="f_sem_2020")
+    base = dff.dropna(subset=["var_ibcbr_m"])
+    if st.session_state["f_sem_2020"]:
+        base = base[base["ano"] != 2020]
+    if base.empty:
+        st.warning("Sem dados suficientes para os filtros selecionados.")
+    else:
+        st.plotly_chart(graficos.fig_ibcbr_por_regime(base), width="stretch")
+    st.caption("Regime = variação da Selic em 3 meses (±0,25 p.p.). A relação é de associação: a pandemia e outros choques afetam o IBC-Br independentemente da política monetária.")
 
 with abas[4]:
     st.info("TODO: heatmap de Pearson (níveis e variações) + correlação defasada câmbio → IPCA. Associação, não causalidade.")
