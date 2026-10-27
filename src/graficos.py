@@ -87,3 +87,44 @@ def fig_ibcbr_por_regime(df):
     )
     fig.update_layout(showlegend=False)
     return fig
+
+# ---------- Correlações ----------
+ROTULOS = {
+    "selic": "Selic", "ipca_12m": "IPCA 12m", "juro_real": "Juro real", "ptax_media": "PTAX", "ibcbr": "IBC-Br",
+    "var_selic_pp": "Δ Selic (p.p.)", "ipca_mensal": "IPCA mensal", "var_ptax_pct": "Δ% PTAX", "var_ibcbr_m": "Δ% IBC-Br",
+}
+COLUNAS_NIVEIS = ["selic", "ipca_12m", "juro_real", "ptax_media", "ibcbr"]
+COLUNAS_VARIACOES = ["var_selic_pp", "ipca_mensal", "var_ptax_pct", "var_ibcbr_m"]
+# rótulo do par -> (série que antecede, série que reage)
+PARES_DEFASAGEM = {
+    "Câmbio (Δ% PTAX) → IPCA mensal": ("var_ptax_pct", "ipca_mensal"),
+    "Selic (Δ p.p.) → IBC-Br (Δ% mensal)": ("var_selic_pp", "var_ibcbr_m"),
+}
+
+
+def fig_heatmap_correlacao(corr, pval):
+    """Matriz de correlação de Pearson; * marca p < 0,05 (sem correção para múltiplos testes)."""
+    nomes = [ROTULOS.get(c, c) for c in corr.columns]
+    n = len(nomes)
+    texto = [
+        [f"{corr.iloc[i, j]:.2f}".replace(".", ",") + ("*" if i != j and pval.iloc[i, j] < 0.05 else "") for j in range(n)]
+        for i in range(n)
+    ]
+    fig = go.Figure(go.Heatmap(z=corr.values, x=nomes, y=nomes, text=texto, texttemplate="%{text}",
+                               colorscale="RdBu_r", zmin=-1, zmax=1, colorbar=dict(title="r")))
+    fig.update_layout(title="Matriz de correlação de Pearson (* p < 0,05)", yaxis=dict(autorange="reversed"))
+    return fig
+
+
+def fig_correlacao_defasada(res, titulo):
+    """Correlação de x(t) com y(t+k) para cada defasagem k; azul = p < 0,05."""
+    cores = ["#0B5CAD" if p < 0.05 else "#c5ccd3" for p in res["p_valor"]]
+    fig = go.Figure(go.Bar(
+        x=res["defasagem_meses"], y=res["pearson"], marker_color=cores,
+        customdata=res[["p_valor", "n"]],
+        hovertemplate="Defasagem de %{x} meses<br>r = %{y:.2f}<br>p = %{customdata[0]:.3f}<br>n = %{customdata[1]}<extra></extra>",
+    ))
+    fig.add_hline(y=0, line_color="gray")
+    fig.update_layout(title=f"{titulo}: correlação por defasagem", xaxis_title="Defasagem (meses)",
+                      yaxis_title="Pearson (r)", yaxis_range=[-1, 1], xaxis=dict(dtick=1))
+    return fig
