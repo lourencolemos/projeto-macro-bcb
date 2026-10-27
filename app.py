@@ -1,5 +1,6 @@
 """Data App: Inteligência Macroeconômica do Brasil (BACEN/SGS, 2019-2023)."""
-import streamlit as st
+import streamlit as st 
+from scipy import stats
 
 from src import db, graficos
 
@@ -17,6 +18,7 @@ def brl(v: float) -> str:
 
 # ---------- Dados ----------
 df, origem = db.carregar_tabela("fato_macro_mensal", "macro_mensal.csv")
+ptax_d, _ = db.carregar_tabela("fato_ptax_diaria", "ptax_diaria.csv")
 
 MIN_DATA, MAX_DATA = df["mes"].min().date(), df["mes"].max().date()
 ANOS = sorted(df["ano"].unique().tolist())
@@ -85,7 +87,19 @@ with abas[1]:
     st.caption("Limitações: o juro real ex-post usa a inflação passada (IPCA 12m), não a expectativa de inflação.")
 
 with abas[2]:
-    st.info("TODO: PTAX com média do quinquênio + dispersão PTAX × IPCA 12m (cor = ano, tamanho = Selic).")
+    ptax_per = ptax_d[(ptax_d["data"] >= periodo[0].isoformat()) & (ptax_d["data"] <= periodo[1].isoformat())]
+    media_5a = ptax_d["ptax_venda"].mean()  # média de todo o quinquênio, independente dos filtros
+    if ptax_per.empty:
+        st.warning("Sem cotações no período selecionado.")
+    else:
+        pct_acima = (ptax_per["ptax_venda"] > media_5a).mean() * 100
+        st.plotly_chart(graficos.fig_cambio_media(ptax_per, media_5a), width="stretch")
+        st.caption(f"Média do quinquênio 2019–2023: {brl(media_5a)}. No período filtrado, o dólar ficou acima dela em {pct(pct_acima)} dos dias úteis. Este gráfico responde ao filtro de período.")
+    st.plotly_chart(graficos.fig_dispersao_macro(dff), width="stretch")
+    par = dff[["ptax_media", "ipca_12m"]].dropna()
+    if len(par) > 2:
+        r, p = stats.pearsonr(par["ptax_media"], par["ipca_12m"])
+        st.caption(f"Pearson entre PTAX e IPCA 12m (níveis, {len(par)} meses): r = {r:.2f}, p = {p:.3f}".replace(".", ",") + ". Séries com tendência podem gerar correlação espúria, e associação não implica causalidade.")
 
 with abas[3]:
     st.info("TODO: IBC-Br dessazonalizado com faixas de aperto/corte monetário.")
