@@ -1,7 +1,9 @@
 """Construtores das figuras Plotly. Uma função por visual, sempre recebendo o DataFrame já filtrado."""
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
+COR_REGIME = {"Aperto": "#d62728", "Corte": "#2ca02c", "Estável": "#9aa5b1"}
 
 def fig_politica_monetaria(df):
     """Selic Meta + IPCA 12m (linhas) e Juro Real ex-post (barras) no mesmo plano."""
@@ -43,3 +45,45 @@ def fig_dispersao_macro(df):
         labels={"ptax_media": "PTAX média mensal (R$)", "ipca_12m": "IPCA 12m (%)", "ano": "Ano", "selic": "Selic (% a.a.)"},
         title="Câmbio e inflação: cada ponto é um mês (tamanho = Selic)",
     )
+
+# ---------- Atividade ----------
+def faixas_regime(df):
+    """Agrupa meses consecutivos com o mesmo regime em faixas (início, fim, regime)."""
+    faixas = []
+    for mes, regime in zip(df["mes"], df["regime"]):
+        fim = mes + pd.offsets.MonthBegin(1)
+        if faixas and faixas[-1][2] == regime and faixas[-1][1] == mes:
+            faixas[-1] = (faixas[-1][0], fim, regime)
+        else:
+            faixas.append((mes, fim, regime))
+    return faixas
+
+
+def fig_ibcbr_ciclos(df):
+    """IBC-Br dessazonalizado com faixas coloridas para os ciclos de aperto e de corte da Selic."""
+    fig = go.Figure()
+    for ini, fim, regime in faixas_regime(df):
+        if regime != "Estável":
+            fig.add_vrect(x0=ini, x1=fim, fillcolor=COR_REGIME[regime], opacity=0.15, line_width=0, layer="below")
+    fig.add_scatter(x=df["mes"], y=df["ibcbr"], name="IBC-Br (dessazonalizado)", mode="lines",
+                    line=dict(width=3, color="#0B5CAD"))
+    for regime in ("Aperto", "Corte"):  # entradas de legenda para as faixas
+        fig.add_scatter(x=[None], y=[None], mode="markers", name=f"Ciclo de {regime.lower()}",
+                        marker=dict(size=12, symbol="square", color=COR_REGIME[regime], opacity=0.4))
+    fig.update_layout(title="IBC-Br e ciclos da política monetária", yaxis_title="Índice",
+                      xaxis_title=None, hovermode="x unified", legend=dict(orientation="h", y=-0.15))
+    return fig
+
+
+def fig_ibcbr_por_regime(df):
+    """Variação mensal média do IBC-Br em cada regime monetário."""
+    g = df.groupby("regime").agg(var_media=("var_ibcbr_m", "mean"), meses=("mes", "count")).reset_index()
+    g["rotulo"] = g["regime"] + " (" + g["meses"].astype(str) + " meses)"
+    fig = px.bar(
+        g, x="rotulo", y="var_media", color="regime", color_discrete_map=COR_REGIME,
+        text=g["var_media"].map(lambda v: f"{v:+.2f}%".replace(".", ",")),
+        labels={"rotulo": "Regime monetário", "var_media": "Variação mensal média (%)"},
+        title="Variação mensal média do IBC-Br por regime",
+    )
+    fig.update_layout(showlegend=False)
+    return fig
