@@ -37,6 +37,9 @@ def matriz_correlacao(df: pd.DataFrame, colunas: list[str]) -> tuple[pd.DataFram
     pval = corr.copy()
     for a in colunas:
         for b in colunas:
+            if a == b:  # diagonal: evita colunas duplicadas e o cálculo desnecessário
+                corr.loc[a, b], pval.loc[a, b] = 1.0, 0.0
+                continue
             par = df[[a, b]].dropna()
             r, p = stats.pearsonr(par[a], par[b]) if len(par) > 2 else (np.nan, np.nan)
             corr.loc[a, b], pval.loc[a, b] = r, p
@@ -51,3 +54,14 @@ def correlacao_defasada(x: pd.Series, y: pd.Series, max_defasagem: int = 12) -> 
         r, p = stats.pearsonr(par.iloc[:, 0], par.iloc[:, 1])
         linhas.append({"defasagem_meses": k, "pearson": r, "p_valor": p, "n": len(par)})
     return pd.DataFrame(linhas)
+
+def maiores_correlacoes(corr: pd.DataFrame, pval: pd.DataFrame, n: int = 3) -> pd.DataFrame:
+    """Pares com maior |r| (sem a diagonal e sem repetição)."""
+    cols = list(corr.columns)
+    linhas = [
+        {"serie_a": a, "serie_b": b, "pearson": corr.loc[a, b], "p_valor": pval.loc[a, b]}
+        for k, a in enumerate(cols) for b in cols[k + 1:] if pd.notna(corr.loc[a, b])
+    ]
+    if not linhas:
+        return pd.DataFrame(columns=["serie_a", "serie_b", "pearson", "p_valor"])
+    return pd.DataFrame(linhas).sort_values("pearson", key=abs, ascending=False).head(n)
