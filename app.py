@@ -2,7 +2,7 @@
 import streamlit as st 
 from scipy import stats
 
-from src import db, graficos, indicadores
+from src import db, graficos, indicadores, insights
 
 st.set_page_config(page_title="Macro Brasil 2019–2023", page_icon="📈", layout="wide")
 
@@ -83,8 +83,15 @@ c4.metric("Dólar PTAX (média do mês)", brl(ult["ptax_media"]), f"{ult['ptax_m
 abas = st.tabs(["Visão Executiva", "Política Monetária", "Câmbio", "Atividade", "Correlações", "Dados"])
 
 with abas[0]:
-    st.subheader("Contexto → Insight → Ação")
-    st.info("TODO: resumo executivo em pirâmide invertida, com números reais calculados a partir de `dff`.")
+    st.subheader("Resumo executivo")
+    st.caption(f"{len(dff)} meses analisados. Os textos se atualizam com os filtros da barra lateral.")
+    col_a, col_b = st.columns(2)
+    for i, c in enumerate(insights.gerar_cartoes(dff, ptax_d, periodo)):
+        with (col_a if i % 2 == 0 else col_b).container(border=True):
+            st.markdown(f"#### {c['titulo']}")
+            st.markdown(f"**Contexto.** {c['contexto']}")
+            st.markdown(f"**Insight.** {c['insight']}")
+            st.markdown(f"**Ação.** {c['acao']}")
 
 with abas[1]:
     st.plotly_chart(graficos.fig_politica_monetaria(dff), width="stretch")
