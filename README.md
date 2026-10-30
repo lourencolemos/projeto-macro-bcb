@@ -3,18 +3,20 @@
 > Projeto Avaliativo Final · Visualização de Dados e Business Intelligence · Linha 3 (BACEN/SGS)
 
 ## 1. Título e Resumo Executivo
-Data App em Streamlit 
+**Inteligência Macroeconômica do Brasil (2019–2023)**
 Integra cinco séries do SGS/Banco Central (Selic Meta, IPCA mensal e em 12 meses, dólar PTAX e IBC-Br) entre 2019 e 2023 para analisar a relação entre política monetária, inflação, câmbio e atividade econômica. Os dados são extraídos por API, tratados em Python, modelados em tabelas fato e dimensão no PostgreSQL (Supabase) e servidos em um painel interativo com filtros, KPIs e gráficos Plotly.
 
 ## 2. Contexto de Negócio e Pergunta Orientadora
-O painel serve para apoiar gestores e analistas financeiros que precisam entender o ambiente macroeconômico antes de decidir sobre crédito, investimentos e exposição cambial.
+Entre 2019 e 2023, o Brasil viveu uma Selic Meta de 2% a.a. (mínimo do período), o choque inflacionário pós-pandemia e um ciclo intenso de aperto monetário. Gestores financeiros, tesourarias e analistas precisam entender como o custo do dinheiro, o câmbio e a inflação se relacionaram com a atividade para decidir sobre crédito, orçamento e investimentos.
 
-Perguntas de negócio:
-1. Como evoluíram a Selic e o juro real ex-post frente à inflação?
-2. Em quais períodos o dólar ficou acima da média do quinquênio?
-3. Há associação entre as variações do câmbio e da inflação, e com qual defasagem?
-4. Como o IBC-Br se comportou nos ciclos de aperto e de corte da Selic?
-5. Quais séries apresentam as maiores correlações entre si?
+**Pergunta orientadora:** como a política monetária, a inflação e o câmbio evoluíram entre 2019 e 2023, e o que os dados permitem (e não permitem) concluir sobre sua relação com a atividade econômica?
+
+**Perguntas de negócio:**
+1. Como a Selic Meta evoluiu no ciclo 2019–2023 e quando o juro real ex-post foi mais alto frente ao IPCA 12m?
+2. Qual foi a trajetória do dólar PTAX e em quais janelas ele ficou acima da média do quinquênio?
+3. Há correlação visual e estatística entre os choques cambiais e o avanço posterior da inflação?
+4. Como o IBC-Br reagiu aos períodos de aperto e de corte da Selic?
+5. Quais pares de variáveis tiveram os maiores coeficientes de correlação de Pearson?
 
 ## 3. Fonte de Dados e Licença
 - **Fonte:** Sistema Gerenciador de Séries Temporais (SGS) do Banco Central do Brasil (API pública).
@@ -90,7 +92,6 @@ Perguntas de negócio:
 | SciPy | Correlações de Pearson e p-valores |
 
 ## 7. Principais Resultados e Evidências Numéricas
-## 7. Principais Resultados e Evidências Numéricas
 
 **Custo do dinheiro.** A Selic Meta atingiu o máximo de 13,75% em ago/2022. O IPCA em 12 meses chegou ao pico de 12,13% em abr/2022, antes do pico da Selic. O juro real ex-post, por sua vez, alcançou 10,27% em jun/2023, quando a inflação já desacelerava com a Selic ainda alta, e ficou positivo em 67% dos meses do período. O juro real não positivo (33% dos meses) deve se concentrar na fase de Selic baixa e inflação em alta, o que o gráfico da aba Política Monetária permite conferir.
 
@@ -130,8 +131,23 @@ Nas variações mensais, que reduzem o efeito das tendências, os três maiores 
 O painel apoia a leitura do cenário macroeconômico e a formulação de hipóteses. Ele não substitui modelos preditivos nem constitui recomendação de investimento.
 
 ## 10. Demonstração do Data App (Streamlit)
-- Link: TODO (https://SEU-APP.streamlit.app)
-- Capturas de tela e guia de navegação por abas: TODO
+- Link: (https://macro-bcb-lourencoflemos.streamlit.app/)
+| Aba | O que mostra |
+|---|---|
+| Visão Executiva | Quatro cartões (contexto, insight e ação) gerados dos dados filtrados |
+| Política Monetária | Selic Meta, IPCA 12m e juro real ex-post no mesmo plano |
+| Câmbio | PTAX diária com a média do quinquênio e dispersão PTAX × IPCA 12m |
+| Atividade | IBC-Br com ciclos de aperto e corte e variação mensal média por regime |
+| Correlações | Heatmap de Pearson (níveis e variações) e correlação defasada |
+| Dados | Tabela filtrada e download em CSV |
+
+**Guia de navegação:** a barra lateral filtra período, ano e regime monetário e tem o botão **Resetar filtros**. Os quatro KPIs do topo (Selic, IPCA 12m, juro real e PTAX) mostram a variação em relação a 12 meses antes.
+
+![Visão Executiva](docs/img/01_visao_executiva.png)
+![Política Monetária](docs/img/02_politica_monetaria.png)
+![Câmbio](docs/img/03_cambio.png)
+![Atividade](docs/img/04_atividade.png)
+![Correlações](docs/img/05_correlacoes.png)
 
 ## 11. Como Executar Localmente
 ```bash
@@ -146,25 +162,34 @@ streamlit run app.py
 ## 12. Estrutura de Pastas
 ```
 ├── data/raw/            # séries brutas do SGS
-├── data/processed/      # base tratada (CSV de contingência do app)
-├── notebooks/           # EDA e prototipagem
-├── src/                 # config, etl, indicadores, db, graficos, carga_postgres
+├── data/processed/      # base tratada (também usada como contingência pelo app)
+├── notebooks/           # exploração dos dados
+├── src/
+│   ├── config.py        # caminhos, séries e período
+│   ├── etl.py           # extração, limpeza, modelagem e validação
+│   ├── indicadores.py   # juro real, regimes e correlações
+│   ├── insights.py      # textos da Visão Executiva
+│   ├── graficos.py      # figuras Plotly
+│   ├── db.py            # acesso ao PostgreSQL com contingência em CSV
+│   └── carga_postgres.py
+├── docs/                # backlog do Trello e imagens do README
 ├── .streamlit/          # config.toml e secrets.toml.example
-├── docs/                # backlog do Trello
 ├── app.py               # Data App
-├── requirements.txt
-└── .gitignore
+└── requirements.txt
 ```
 
 ## 13. Gestão Ágil e Links do Projeto
 - Quadro Kanban (Trello, público): https://trello.com/b/dMtjZEog/macroeconomia-taxas-de-juros-indicadores-economicos-banco-central-ipea
-- Print do quadro: TODO
-- App em produção: TODO
+![Quadro Kanban no Trello](docs/img/06_trello.png)
+- App em produção:(https://macro-bcb-lourencoflemos.streamlit.app/)
 - Vídeo de apresentação: TODO
 
 ## 14. Autoria e Créditos
-- Autor(a): TODO · LinkedIn: TODO
-- Referências: documentação do SGS/BACEN, Streamlit, Plotly e pandas (TODO: citar as páginas consultadas).
-#   p r o j e t o - m a c r o - b c b 
- 
- 
+- Autor(a): Lourenço Fernandes Lemos · LinkedIn: www.linkedin.com/in/lourencolemos
+- Referências: 
+- Banco Central do Brasil. Sistema Gerenciador de Séries Temporais (SGS): https://www3.bcb.gov.br/sgspub
+- Banco Central do Brasil. Portal de Dados Abertos: https://dadosabertos.bcb.gov.br
+- Streamlit. Documentação: https://docs.streamlit.io
+- Plotly. Documentação do Plotly para Python: https://plotly.com/python
+- pandas. Documentação: https://pandas.pydata.org/docs
+- Supabase. Documentação: https://supabase.com/docs
