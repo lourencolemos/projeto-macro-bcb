@@ -92,7 +92,6 @@ Entre 2019 e 2023, o Brasil viveu uma Selic Meta de 2% a.a. (mínimo do período
 | SciPy | Correlações de Pearson e p-valores |
 
 ## 7. Principais Resultados e Evidências Numéricas
-## 7. Principais Resultados e Evidências Numéricas
 
 **Custo do dinheiro.** A Selic Meta atingiu o máximo de 13,75% em ago/2022. O IPCA em 12 meses chegou ao pico de 12,13% em abr/2022, antes do pico da Selic. O juro real ex-post, por sua vez, alcançou 10,27% em jun/2023, quando a inflação já desacelerava com a Selic ainda alta, e ficou positivo em 67% dos meses do período. O juro real não positivo (33% dos meses) deve se concentrar na fase de Selic baixa e inflação em alta, o que o gráfico da aba Política Monetária permite conferir.
 
@@ -194,6 +193,3 @@ streamlit run app.py
 - Plotly. Documentação do Plotly para Python: https://plotly.com/python
 - pandas. Documentação: https://pandas.pydata.org/docs
 - Supabase. Documentação: https://supabase.com/docs
-#   p r o j e t o - m a c r o - b c b 
- 
- 
