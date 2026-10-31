@@ -182,7 +182,7 @@ streamlit run app.py
 - Quadro Kanban (Trello, público): https://trello.com/b/dMtjZEog/macroeconomia-taxas-de-juros-indicadores-economicos-banco-central-ipea
 ![Quadro Kanban no Trello](docs/img/06_trello.png)
 - App em produção:(https://macro-bcb-lourencoflemos.streamlit.app/)
-- Vídeo de apresentação: TODO
+- Vídeo de apresentação: (https://youtu.be/KJZjRkBlYCk)
 
 ## 14. Autoria e Créditos
 - Autor(a): Lourenço Fernandes Lemos · LinkedIn: www.linkedin.com/in/lourencolemos
